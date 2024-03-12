@@ -43,8 +43,10 @@ def close_mysql():
 def execute_query(query, params=None):
     global connection
     try:
+
         # Creates a cursor and executes the query.
-        cursor = connection.cursor()
+        if connection is not None:
+            cursor = connection.cursor()
         if params:
             cursor.execute(query, (params,))
         else:
@@ -59,13 +61,6 @@ def execute_query(query, params=None):
     except Error as e:
         print("Error executing query: ", e)
         raise Error
-
-
-# Function to create the tables if they don't exist yet.
-def create_tables():
-    with open("create_statements.sql") as create:
-        sql = create.read()
-        execute_query(sql)
 
 
 # Get the next avaible puuid for fetching.

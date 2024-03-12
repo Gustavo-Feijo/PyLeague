@@ -6,10 +6,9 @@ from fetch import *
 # Create the connection to the mysql database.
 # Create the tables if they don't exist.
 connect_mysql()
-create_tables()
-
 # Try block to get the user interruption of the code.
 try:
+
     # Infinite loop to get the data.
     while True:
         # Try to get the next puuid from the database.
