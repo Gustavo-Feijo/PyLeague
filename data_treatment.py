@@ -3,6 +3,15 @@ import datetime
 
 # Get very simple match info and let it structured to insert directly into the database.
 def get_match_info(data):
+    """
+    Function to get simplified information from a match.
+
+    Args:
+        data (dict): Receives a dict containing the data of a given match.
+
+    Returns:
+        dict: Filtered dictionary with useful information from the match.
+    """
     match_info = {
         "match_id": [data["metadata"]["matchId"]],
         "match_start": [
@@ -18,23 +27,68 @@ def get_match_info(data):
 
 # Get very simple player info and structure it to insert into the database..
 def get_player_info(data):
-    player_array = []
-    # Loop through each participant and fetch it's data.
-    for participant in data["info"]["participants"]:
-        match_info = {
-            "puuid": participant["puuid"],
-            "game_name": participant["summonerName"],
-        }
-        player_array.append(match_info)
-    return player_array
+    """
+    Function to get simple player information and structure it.
 
+    Args:
+        data (dict): Receives a dict containing the data of a given match.
 
-# Get informations from each player of a game and return it as a array.
-def get_player_stats(data):
+    Returns:
+        List[Dict]: Returns a list of dictionaries, each containing the information about a player that was on a given match.
+    """
     player_array = []
     # Loop through each participant and fetch it's data.
     for participant in data["info"]["participants"]:
         player_info = {
+            "puuid": participant["puuid"],
+            "summoner_id": participant["summonerId"],
+            "game_name": participant["riotIdGameName"],
+            "tag_line": participant["riotIdTagline"],
+        }
+        player_array.append(player_info)
+    return player_array
+
+
+# Function to return more detailed information about the player, including rating, account id, summoner_level, etc.
+def get_player_details(p_info, p_rating):
+    """
+    Returns the missing information about the player.
+
+    Args:
+        p_info (dict): Information about the player account, including account id, summoner_level, etc.
+        p_rating (dict): Information about the player perfomance in the 5v5 Solo Duo.
+
+    Returns:
+        dict: The filtered dictionary with the relevant information about the player.
+    """
+    player_detail = {
+        "account_id": p_info["accountId"],
+        "profile_icon_id": p_info["profileIconId"],
+        "summoner_level": p_info["summonerLevel"],
+        "tier": p_rating["tier"],
+        "division": p_rating["rank"],
+        "league_points": p_rating["leaguePoints"],
+        "wins": p_rating["wins"],
+        "losses": p_rating["losses"],
+    }
+    return player_detail
+
+
+# Get informations from each player of a game and return it as a array.
+def get_player_stats(data):
+    """
+    Function to get the stats for each player of a game.
+
+    Args:
+        data (dict): Receives a dict containing the data of a given match.
+
+    Returns:
+        List[Dict]: Returns a list of dictionaries with the stats of each player.
+    """
+    player_array = []
+    # Loop through each participant and fetch it's data.
+    for participant in data["info"]["participants"]:
+        player_stats = {
             # Imutable global ID, unique for each account.
             "player_id": participant["puuid"],
             # ID of a given match. Should appear 10 times, one for each player.
@@ -76,6 +130,8 @@ def get_player_stats(data):
             "wards_killed": participant["wardsKilled"],
             # Game informations.
             "individual_position": participant["individualPosition"],
+            # Player team, if it equals 200, return true, otherwise 0. Blue team is stored as 0 and red as 1 on the Database.
+            "team": participant["teamId"] == 200,
         }
-        player_array.append(player_info)
+        player_array.append(player_stats)
     return player_array
