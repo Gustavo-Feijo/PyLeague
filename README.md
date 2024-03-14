@@ -30,6 +30,7 @@ Multiple adjustments could be done to the code to improve it, some as follows:
 - Add additional modules for different tasks, such as data analysis with Pandas, graph generation, etc.
 - Add support for Match V5 timeline, improving the depth of the fetched data.
 - Evaluate the possibility of changes in the tables structure, by, for example, calculating the KDA, total cs and fields dependant on time during the fetching process of the data to minimize the storage cost.
-- Improve the amount and quality of the fetched data, by adding more API endpoints to be fetched, such as Summoner V4, to get the summoner level, profile icon (For front-end uses), account id, etc.
+- Improve the amount and quality of the fetched data, by adding more API endpoints to be fetched, such as Summoner V4, to get the summoner level, profile icon (For front-end uses), account id, etc. (Implemented)
 - Improve treatment of errors.
-- Start the fetching without the need to manually add the first player info. Could be done by fetching a random player of a League by using the LEAGUE-V4 API, preferably from the Challenger League.
+- Start the fetching without the need to manually add the first player info. Could be done by fetching a random player of a League by using the LEAGUE-V4 API, preferably from the Challenger League. (Implemented. PS: Problems could happen if the player didn't played since the start date for the database.)
+- Implement paralelism to improve performance, adding multithreading and fetching from different regions to avoid rate limiting.
