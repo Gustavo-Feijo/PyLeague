@@ -5,18 +5,35 @@ CREATE TABLE IF NOT EXISTS tb_player_info (
     id INT PRIMARY KEY AUTO_INCREMENT,
     /*Unique identifier for the player (Globally).*/
     puuid CHAR(78) UNIQUE NOT NULL,
-    /*Unique identifier for the account (Locally), not  in use for now.*/
-    account_id CHAR(56),
+    /*Unique identifier for the account (Locally)*/
+    account_id VARCHAR(56),
+    summoner_id VARCHAR(63),
     /*Name of the player inGame. Being inserted on the name at the time.*/
     game_name VARCHAR(50),
-    /*Tag line of the player account. Not used for now.*/
+    /*Tag line of the player account. */
     tag_line VARCHAR(5),
-    /*Level of the player. Not used for now.*/
+    /*Level of the player. */
     summoner_level SMALLINT UNSIGNED,
-    /*Profile icon of the player. Not used for now.*/
+    /*Profile icon of the player. */
     profile_icon_id SMALLINT UNSIGNED,
+    tier ENUM(
+        'IRON',
+        'BRONZE',
+        'SILVER',
+        'GOLD',
+        'PLATINUM',
+        'EMERALD',
+        'DIAMOND',
+        'MASTER',
+        'GRANDMASTER',
+        'CHALLENGER'
+    ),
+    division ENUM('I', 'II', 'III', 'IV'),
+    league_points SMALLINT UNSIGNED,
+    wins SMALLINT UNSIGNED,
+    losses SMALLINT UNSIGNED,
     /*Last time the data of the player was fetched, used to mantain the fetch up to date.*/
-    last_fetch TIMESTAMP DEFAULT '2024-01-01 00:00:00'
+    last_fetch TIMESTAMP DEFAULT "2024-03-06 00:00:00"
 );
 
 /*Create statement for storing the match information.*/
@@ -59,8 +76,8 @@ create table IF NOT EXISTS tb_player_stats (
     /*Damage stats.*/
     damage_per_minute float,
     total_damage_dealt_to_champions int,
-    /*Farm stats.
-     neutral_minions_killed SMALLINT UNSIGNED,*/
+    /*Farm stats.*/
+    neutral_minions_killed SMALLINT UNSIGNED,
     total_minions_killed SMALLINT UNSIGNED,
     total_cs SMALLINT UNSIGNED,
     cs_per_min float,
@@ -79,6 +96,7 @@ create table IF NOT EXISTS tb_player_stats (
         'UTILITY',
         'Invalid'
     ),
+    team boolean,
     FOREIGN KEY (player_id) references tb_player_info(id),
     FOREIGN KEY (match_id) references tb_match_info(id),
     /*Unique composite key to avoid the same player being added twich from a match he already played.*/
