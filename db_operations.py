@@ -16,11 +16,26 @@ connection = None
 connection_string = f"mysql+mysqlconnector://{os.getenv('DB_USERNAME')}:{os.getenv('DB_PASSWORD')}@{os.getenv('DB_HOST')}/{os.getenv('DB_DATABASE')}"
 engine = sqlalchemy.create_engine(connection_string)
 
+"""
+    Module with the operations needed to insert, fetch and update data from the database.
+    Most of the operations have the following pattern:
+
+    Args: 
+    VOID => Functions that will always run a pre defined sql statement.
+    PUUID OR MATCH_ID => Functions that will fetch players/match data from the database or verify if the data was already inserted.
+    DICTIONARYS => Functions that will receive pre filtered dictionaries ready to be inserted into the database.
+
+    Raises:
+    Most of the function will raise the mysql exceptions, since most of them use the execute_query function.
+"""
+
 
 # Connect to the mysql database.
 def connect_mysql():
+    """
+    Connect to the mysql database with the credentials from the enviroment.
+    """
     global connection
-    # Set the global connection as the mysql connection (If successful).
     try:
         connection = mysql.connector.connect(
             host=os.getenv("DB_HOST"),
@@ -28,12 +43,15 @@ def connect_mysql():
             password=os.getenv("DB_PASSWORD"),
             database=os.getenv("DB_DATABASE"),
         )
-    except Error as e:
-        print("Error connecting to mysql: ", e)
+    except Error as err:
+        raise err
 
 
 # Function to close the mysql connection.
 def close_mysql():
+    """
+    References the global connection, verify that it exists and is connected, if it is, close the connection.
+    """
     global connection
     if connection and connection.is_connected():
         connection.close()
@@ -41,14 +59,29 @@ def close_mysql():
 
 # Execute a query on the database.
 def execute_query(query, params=None):
+    """
+    Execute a query on the database. Verifies the connection, if it's connected creates a cursor anr proceeds to execute the query.
+
+    Args:
+        query (string): String containing the query to execute.
+        params (tuples, optional): Receives a tuble with the values to be passed to the database alongside the SQL query. Defaults to None.
+
+    Raises:
+        Exception: Raises any exception raised by the mysql.
+
+    Returns:
+        List[tuples]: Returns a list of tuples containing the results.
+    """
     global connection
     try:
 
         # Creates a cursor and executes the query.
         if connection is not None:
             cursor = connection.cursor()
+        else:
+            raise Exception("Could not create cursor, the database is not connected.")
         if params:
-            cursor.execute(query, (params,))
+            cursor.execute(query, params)
         else:
             cursor.execute(query)
 
@@ -58,13 +91,32 @@ def execute_query(query, params=None):
 
         connection.commit()
         return data
-    except Error as e:
-        print("Error executing query: ", e)
-        raise Error
+    except Exception:
+        raise Exception
+
+
+# Create the tables if they don't exist.
+def create_tables():
+    """
+    Function to create the tables if they don't exist already.
+    Split the statements, remove any trailing whitespaces to avoid a wrong ; and execute the queries.
+    """
+    with open("create_statements.sql", "r") as sql_file:
+        sql = sql_file.read()
+        statements = sql.split(";")
+        try:
+            for statement in statements:
+                if statement.strip():
+                    execute_query(statement)
+        except Exception as e:
+            raise e
 
 
 # Get the next avaible puuid for fetching.
 def get_next_puuid():
+    """
+    Selects the first puuid when sorting by ascending fetch date and ascending id, getting the oldest puuid that wasn't fetched lately.
+    """
     sql = (
         """SELECT puuid FROM tb_player_info ORDER BY last_fetch ASC, id ASC LIMIT 1 """
     )
@@ -76,79 +128,174 @@ def get_next_puuid():
         raise e
 
 
-# Verify if a match was fetched before by checking the count of match_id on the database.
+# Verify if a match is on the database by checking the count of match_id on the database.
 def is_match_on_db(match_id):
+    """
+    Args:
+        match_id (string): Receives the id of a match to check against the database.
+
+    Returns:
+        bool: If the match was found on the database, returns TRUE, else returns FALSE.
+    """
     sql = """ SELECT COUNT(*) FROM tb_match_info where match_id = %s"""
-    match_on_db = execute_query(sql, match_id)
-    if match_on_db is not None:
-        # Returns false if the element is not found on the DB. [0][0] since the return is a tuple inside a list.
-        if match_on_db[0][0] == 0:
-            return False
+    try:
+        match_on_db = execute_query(sql, (match_id,))
+        if match_on_db is not None:
+            # Returns false if the element is not found on the DB. [0][0] since the return is a tuple inside a list.
+            if match_on_db[0][0] == 0:
+                return False
+            else:
+                return True
         else:
-            return True
-    else:
-        return None
+            raise Exception("Could not verify the database")
+    except Exception as e:
+        raise e
 
 
-# Verify if a player was already added to the database before.
+# Verify if a player is already on the database before.
 def is_player_on_db(puuid):
+    """
+    Args:
+        puuid (string): Receives the unique id of a player to check against the database.
+
+    Returns:
+        bool: If the player was found on the database, returns TRUE, else returns FALSE.
+    """
     sql = """ SELECT COUNT(*) FROM tb_player_info WHERE puuid = %s"""
-    player_on_db = execute_query(sql, puuid)
-    if player_on_db is not None:
-        # Returns the first element of the tuple inside the list, since it's only one possible return value.
-        if player_on_db[0][0] == 0:
-            return False
+    try:
+        player_on_db = execute_query(sql, (puuid,))
+        if player_on_db is not None:
+            # Returns the first element of the tuple inside the list, since it's only one possible return value.
+            if player_on_db[0][0] == 0:
+                return False
+            else:
+                return True
         else:
-            return True
-    else:
-        return None
+            raise Exception("Could not verify the database")
+    except Exception as e:
+        raise e
 
 
 # Get the id of the player based on the puuid.
 def get_player_id(puuid):
+    """
+    Essential function. Returns the int id of a player that shares the same puuid as the passed.
+    Don't do the checking for the existence of the player on the database.
+
+    Returns:
+        Integer: The int id of the player on the players table.
+    """
     sql = """SELECT id FROM tb_player_info WHERE puuid = %s"""
-    player_id = execute_query(sql, puuid)
-    return player_id[0][0]
+    try:
+        player_id = execute_query(sql, (puuid,))
+        return player_id[0][0]
+    except Exception as e:
+        raise e
 
 
 # Get the id of a match based on the match_id.
 def get_match_id(match_id):
+    """
+    Essential function. Returns the int id of a match that shares the same match_id as the passed.
+    Don't do the checking for the existence of the match on the database.
+
+    Returns:
+        Integer: The int id of the match on the matches table.
+    """
     sql = """SELECT id FROM tb_match_info where match_id = %s"""
-    match = execute_query(sql, match_id)
-    return match[0][0]
+    try:
+        match = execute_query(sql, (match_id,))
+        return match[0][0]
+    except Exception as e:
+        raise e
 
 
 # Get the date of the last fetch on a given player.
 def get_last_fetch(puuid):
+    """
+    Function used for mantaining the control flow of the fetching process, so no player can have it's data fetched until all others players before him have it's data fetched.
+
+    Returns:
+        Date: Return the last date since the fetch of t he players data.
+    """
     sql = """SELECT last_fetch FROM tb_player_info WHERE puuid = %s"""
-    date = execute_query(sql, puuid)
-    return date[0][0]
+    try:
+        date = execute_query(sql, (puuid,))
+        return date[0][0]
+    except Exception as e:
+        raise e
 
 
 # Function to update the last_fetch date for a given player.
 def update_fetch_date(puuid):
+    """
+    Update the last_fetch date for a given player after all his data was fetched.
+    """
     sql = """UPDATE tb_player_info SET last_fetch = CURDATE() WHERE puuid = %s"""
-    execute_query(sql, puuid)
+    try:
+        execute_query(sql, (puuid,))
+    except Exception as e:
+        raise e
 
 
 # Function to insert a match into the database.
 def insert_match_info(match_info):
-    df = pd.DataFrame(match_info)
-    df.to_sql("tb_match_info", con=engine, if_exists="append", index=False)
+    """
+    Function that creates a pandas dataframe from a dictionary and insert it into the database with the sqlalchemy.
+
+    Args:
+        match_info (DICT): Dictionary carrying information about the match, pre formatted.
+
+    Raises:
+        Exception: Any exception caught during the dataframe creation or the sql insertion.
+    """
+    try:
+        df = pd.DataFrame(match_info)
+        df.to_sql("tb_match_info", con=engine, if_exists="append", index=False)
+    except Exception as e:
+        raise e
 
 
 # Function to insert a player array into the database, filtering the already existing players.
 def insert_player_info(player_info):
-    df = pd.DataFrame(player_info)
-    mask = df["puuid"].apply(is_player_on_db)
-    filtered = df[~mask].copy()
-    filtered.to_sql("tb_player_info", con=engine, if_exists="append", index=False)
+    """
+    Function to insert a player into the database.
+    Creates a mask by applying the is_player_on_db function, then proceeds to copy the data that didn't match the mask into a new filtered dataframe.
+    Inserts the filtered dataframe into the database with the sqlalchemy.
+
+    Args:
+        player_info (DICT): Dictionary carrying information about the player, pre formatted.
+
+    Raises:
+        Exception: Any exception caught during the dataframe creation and manipulation or the sql insertion.
+    """
+    try:
+        df = pd.DataFrame(player_info)
+        mask = df["puuid"].apply(is_player_on_db)
+        filtered = df[~mask].copy()
+        filtered.to_sql("tb_player_info", con=engine, if_exists="append", index=False)
+    except Exception as e:
+        raise e
 
 
 # Function to insert the player stats for a given game.
-def insert_player_stats(match_stats):
-    df = pd.DataFrame(match_stats)
-    # Apply to the dataframe the function to get the int IDs assigned for the PUUID and MatchID.
-    df["player_id"] = df["player_id"].apply(get_player_id)
-    df["match_id"] = df["match_id"].apply(get_match_id)
-    df.to_sql("tb_player_stats", con=engine, if_exists="append", index=False)
+def insert_player_stats(player_stats):
+    """
+    Function to insert the player stats into the database.
+    Get the integers player id and the match id from the database before doing the insertion by applying the function to the columns.
+    Insert the data into the database with the sqlalchemy.
+
+    Args:
+        player_stats (List[Dict]): List carrying the individual stats for each player on a match, pre formatted.
+
+    Raises:
+        Exception: Any exception caught during the dataframe creation and manipulation or the sql insertion.
+    """
+    try:
+        df = pd.DataFrame(player_stats)
+        # Apply to the dataframe the function to get the int IDs assigned for the PUUID and MatchID.
+        df["player_id"] = df["player_id"].apply(get_player_id)
+        df["match_id"] = df["match_id"].apply(get_match_id)
+        df.to_sql("tb_player_stats", con=engine, if_exists="append", index=False)
+    except Exception as e:
+        raise e
