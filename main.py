@@ -5,10 +5,11 @@ from fetch import *
 
 # Create the connection to the mysql database.
 # Create the tables if they don't exist.
-connect_mysql()
+
 # Try block to get the user interruption of the code.
 try:
-
+    connect_mysql()
+    create_tables()
     # Infinite loop to get the data.
     while True:
         # Try to get the next puuid from the database.
@@ -66,6 +67,8 @@ try:
         update_fetch_date(puuid)
 except KeyboardInterrupt:
     print("User interrupted the program.")
+except Error as E:
+    print("A error occurred: %s", e)
 finally:
     # Close the mysql connection.
     close_mysql()
