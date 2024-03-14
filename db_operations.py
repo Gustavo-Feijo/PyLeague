@@ -3,7 +3,7 @@ import os
 import pandas as pd
 import sqlalchemy
 
-from datetime import date
+from datetime import datetime
 from dotenv import load_dotenv
 from mysql.connector import Error
 
@@ -231,7 +231,7 @@ def update_fetch_date(puuid):
     """
     Update the last_fetch date for a given player after all his data was fetched.
     """
-    sql = """UPDATE tb_player_info SET last_fetch = CURDATE() WHERE puuid = %s"""
+    sql = """UPDATE tb_player_info SET last_fetch = NOW() WHERE puuid = %s"""
     try:
         execute_query(sql, (puuid,))
     except Exception as e:
@@ -297,5 +297,86 @@ def insert_player_stats(player_stats):
         df["player_id"] = df["player_id"].apply(get_player_id)
         df["match_id"] = df["match_id"].apply(get_match_id)
         df.to_sql("tb_player_stats", con=engine, if_exists="append", index=False)
+    except Exception as e:
+        raise e
+
+
+# Function to select all the data.
+def get_all_stats():
+    """
+    Select all the data from the player_stats table.
+    """
+    global connection
+    sql = """SELECT * FROM tb_player_stats"""
+    try:
+        df = pd.read_sql(sql, connection, index_col=["id"])
+        return df
+    except Exception as e:
+        raise e
+
+
+# Function to select all the data.
+def get_all_players():
+    """
+    Select all the data from the player_info table.
+    """
+    global connection
+    print(connection)
+    sql = """SELECT * FROM tb_player_info"""
+    try:
+        df = pd.read_sql(sql, connection, index_col=["id"])
+        return df
+    except Exception as e:
+        raise e
+
+
+# Function to select all the data.
+def get_all_matches():
+    """
+    Select all the data from the match_info table.
+    """
+    global connection
+    sql = """SELECT * FROM tb_match_info"""
+    try:
+        df = pd.read_sql(sql, connection, index_col=["id"])
+        return df
+    except Exception as e:
+        raise e
+
+
+# Function to get the default value for the last fetch column.
+def get_default_fetch_date():
+    """
+    Function to get the default value for the last fetch column.
+    Retrieve it from the information_schema table and parse it into date.
+
+    Returns:
+        date: The default value for the last fetch column.
+    """
+    sql = """SELECT column_default FROM information_schema.columns WHERE table_schema = %s AND table_name = 'tb_player_info' AND column_name = 'last_fetch'"""
+    try:
+        default_fetch = execute_query(sql, (os.getenv("DB_DATABASE"),))
+        default_fetch = default_fetch[0][0]
+        to_date = datetime.strptime(default_fetch, "%Y-%m-%d %H:%M:%S")
+        return to_date
+    except Exception as e:
+        raise e
+
+
+# Function to verify if the database is empty or not.
+def empty_db():
+    """
+    Function that gets the count of player on the database.
+
+    Returns:
+        bool: If the database is empty, returns true, otherwise returns false.
+    """
+    sql = """SELECT count(*) FROM tb_player_info"""
+    try:
+        count = execute_query(sql)
+        if count[0][0] == 0:
+            return True
+        else:
+            return False
     except Exception as e:
         raise e
