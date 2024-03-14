@@ -11,7 +11,18 @@ session = requests.Session()
 
 # Generic function to fetch the data from a given URL.
 def fetch(url):
-    # Continue to try to fetch the data until we get a ok response or a error different than the rate limit.
+    """
+    Function that fetches the data from the URL passed as parameter.
+    Continuously fetches the data until a response is received or a error different than 429 occurs.
+    If the error is 429, wait till the api call limit refreshes.
+
+    Args:
+        url (string): The URL of the API endpoint.
+
+    Returns:
+        Dict: Returns the dict received from the API.
+        NONE: Returns none if any other error is returned.
+    """
     while True:
         try:
             # Does a GET request with the given URL and api key on the header.
@@ -37,7 +48,18 @@ def fetch(url):
 
 # Function to fetch the list of matches of a given player.
 def fetch_matches(puuid, start_value, start_date):
-    # Convert the start_date to Epoch timestamp, as used on the RIOT API.
+    """
+    Function that receives a array of matches from the server.
+
+    Args:
+        puuid (string): The player whose matches will be fetched.
+        start_value (integer): How many matches were already fetched, starting to fetch after it.
+        start_date (date): Date to start fetching match data. Converts to timestamp format, which is used by the server.
+
+    Returns:
+        Dict: Returns the dict received from the API.
+        NONE: Returns none if any other error is returned to the fecth function.
+    """
     timestamp = int(start_date.timestamp())
     data = fetch(
         f"https://americas.api.riotgames.com/lol/match/v5/matches/by-puuid/{puuid}/ids?startTime={timestamp}&queue=420&start={start_value}&count=100"
@@ -47,5 +69,68 @@ def fetch_matches(puuid, start_value, start_date):
 
 # Function to fetch the data from a given match.
 def fetch_match_data(match_id):
+    """
+    Function to fetch the data from a given match from the server.
+
+    Args:
+        match_id (string): The ID of the match to fetch.
+
+    Returns:
+        Dict: Returns the dict received from the API.
+        NONE: Returns none if any other error is returned to the fecth function.
+    """
     data = fetch(f"https://americas.api.riotgames.com/lol/match/v5/matches/{match_id}")
     return data
+
+
+# Function to fetch data from a given player.
+def fetch_player_details(summoner_id):
+    """
+    Function to fetch the data from a given player.
+
+    Args:
+        summoner_id (string):  Encrypted summoner ID. Max length 63 characters.
+
+    Returns:
+        Dict: Returns the dict received from the API.
+    """
+
+    data = fetch(
+        f"https://br1.api.riotgames.com/lol/summoner/v4/summoners/{summoner_id}"
+    )
+    return data
+
+
+def fetch_player_rating(summoner_id):
+    """
+    Function to fetch the current rating of a given player.
+    Receives a list with all the queues for the given player, returns only the soloqueue.
+    Args:
+        summoner_id (string): Encrypted summoner ID. Max length 63 characters.
+
+    Returns:
+        Dict: Returns the dict received from the API.
+    """
+    data = fetch(
+        f"https://br1.api.riotgames.com/lol/league/v4/entries/by-summoner/{summoner_id}"
+    )
+    if data is not None:
+        for queue in data:
+            if queue["queueType"] == "RANKED_SOLO_5x5":
+                data = queue
+    return data
+
+
+def fetch_top_challenger():
+    """
+    Function to fetch the player details of the player with most points on the Challenger queue, fetching the player info based on the summoner id and returning the puuid.
+
+    Returns:
+        string: Returns the PUUID of the player with most points on the Challenger queue.
+    """
+    data = fetch(
+        "https://br1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5"
+    )
+    top_one = data["entries"][0]["summonerId"]
+    player_data = fetch_player_details(top_one)
+    return player_data["puuid"]
