@@ -91,8 +91,8 @@ def execute_query(query, params=None):
 
         connection.commit()
         return data
-    except Exception:
-        raise Exception
+    except Exception as e:
+        raise e
 
 
 # Create the tables if they don't exist.
