@@ -414,3 +414,29 @@ def update_rating_date(puuid):
         execute_query(sql, (puuid,))
     except Exception as e:
         raise e
+
+
+# Function to update the player rating.
+def update_rating(rating, puuid):
+    """
+    Function to update the player rating of a given player.
+
+    Args:
+        rating (dict): Dict containing the player's rating information.
+        puuid (string): string containing the player's unique identifier.
+    """
+    sql = """ UPDATE tb_player_info SET tier = %s, division = %s, league_points = %s, wins = %s, losses = %s WHERE puuid = %s"""
+    try:
+        execute_query(
+            sql,
+            (
+                rating["tier"],
+                rating["division"],
+                rating["league_points"],
+                rating["wins"],
+                rating["losses"],
+                puuid,
+            ),
+        )
+    except Exception as e:
+        raise e
