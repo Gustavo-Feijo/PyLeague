@@ -6,7 +6,6 @@ CREATE TABLE IF NOT EXISTS tb_player_info (
     /*Unique identifier for the player (Globally).*/
     puuid CHAR(78) UNIQUE NOT NULL,
     /*Unique identifier for the account (Locally)*/
-    account_id VARCHAR(56),
     summoner_id VARCHAR(63),
     /*Name of the player inGame. Being inserted on the name at the time.*/
     game_name VARCHAR(50),
@@ -33,7 +32,9 @@ CREATE TABLE IF NOT EXISTS tb_player_info (
     wins SMALLINT UNSIGNED,
     losses SMALLINT UNSIGNED,
     /*Last time the data of the player was fetched, used to mantain the fetch up to date.*/
-    last_fetch TIMESTAMP DEFAULT "2024-03-06 00:00:00"
+    last_fetch TIMESTAMP DEFAULT "2024-03-06 00:00:00",
+    /*Last day the rating of the player was fetched, blocks multiple API calls that are unecessary.*/
+    last_rating TIMESTAMP DEFAULT "2024-03-06 00:00:00"
 );
 
 /*Create statement for storing the match information.*/
