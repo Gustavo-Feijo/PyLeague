@@ -131,6 +131,9 @@ def fetch_top_challenger():
     data = fetch(
         "https://br1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5"
     )
-    top_one = data["entries"][0]["summonerId"]
+    max_lp = max(
+        range(len(data["entries"])), key=lambda i: data["entries"][i]["leaguePoints"]
+    )
+    top_one = data["entries"][max_lp]["summonerId"]
     player_data = fetch_player_details(top_one)
     return player_data["puuid"]
