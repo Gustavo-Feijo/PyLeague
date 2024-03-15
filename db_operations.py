@@ -321,7 +321,6 @@ def get_all_players():
     Select all the data from the player_info table.
     """
     global connection
-    print(connection)
     sql = """SELECT * FROM tb_player_info"""
     try:
         df = pd.read_sql(sql, connection, index_col=["id"])
@@ -378,5 +377,40 @@ def empty_db():
             return True
         else:
             return False
+    except Exception as e:
+        raise e
+
+
+# Function to verify if the last time a player was rated was today.
+def last_rating_today(puuid):
+    """
+    Function that selects the last time a player was rated and compares it against the current day.
+
+    Returns:
+        bool: True if the last time a player was rated was today, False otherwise.
+    """
+    sql = """ SELECT last_rating FROM tb_player_info where puuid = %s"""
+
+    try:
+        last_rating = execute_query(sql, (puuid,))
+        last_rating = last_rating[0][0]
+        if last_rating is not None:
+            if last_rating.date() == datetime.now().date:
+                return True
+            else:
+                return False
+    except Exception as e:
+        raise e
+
+
+# Function to update the last time a player rating was updated.
+def update_rating_date(puuid):
+    """
+    Update the last time a player rating was updated, setting it as today.
+    """
+    sql = """ UPDATE tb_player_info SET last_rating = CURDATE() where puuid = %s"""
+
+    try:
+        execute_query(sql, (puuid,))
     except Exception as e:
         raise e
