@@ -75,18 +75,17 @@ try:
                     # p_info is an array of dicts, containing each player on the game.
                     for player in p_info:
                         # Verify if the player is on the DB and if didn't had the rating fetched already.
-                        if last_rating_today(player["puuid"]):
+                        if is_player_on_db(player["puuid"]) and last_rating_today(
+                            player["puuid"]
+                        ):
                             continue
-
                         # Gets the summoner id to use for retrieving the player's rating and treat it.
                         summoner_id = player["summoner_id"]
                         p_rating = get_player_rating(fetch_player_rating(summoner_id))
-
                         if is_player_on_db(player["puuid"]):
                             update_rating(p_rating, player["puuid"])
                             update_rating_date(player["puuid"])
                             continue
-
                         player.update(p_rating)
 
                         # Append the player's array without the duplicates and update the date of the rating fetching.
