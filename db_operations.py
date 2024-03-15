@@ -271,10 +271,14 @@ def insert_player_info(player_info):
     """
     try:
         df = pd.DataFrame(player_info)
-        mask = df["puuid"].apply(is_player_on_db)
-        filtered = df[~mask].copy()
-        filtered.to_sql("tb_player_info", con=engine, if_exists="append", index=False)
+        if not df.empty:
+            mask = df["puuid"].apply(is_player_on_db)
+            filtered = df[~mask].copy()
+            filtered.to_sql(
+                "tb_player_info", con=engine, if_exists="append", index=False
+            )
     except Exception as e:
+        print(e)
         raise e
 
 

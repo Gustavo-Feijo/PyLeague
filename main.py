@@ -91,10 +91,11 @@ try:
                         # Append the player's array without the duplicates and update the date of the rating fetching.
                         new_p_info.append(player)
                         update_rating_date(player["puuid"])
-                    print("Inserting data into the database:")
-                    # Insert the data into the database.
+                    print("Inserting match into the database:")
                     insert_match_info(m_info)
+                    print("Inserting player info into the database:")
                     insert_player_info(new_p_info)
+                    print("Inserting player stats into the database:")
                     insert_player_stats(p_stats)
                 else:
                     continue
