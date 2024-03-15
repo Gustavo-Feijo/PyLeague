@@ -18,6 +18,8 @@ try:
         fetch_date = get_default_fetch_date()
     # Infinite loop to get the data.
     while True:
+        puuid = None
+        last_fetch = None
         # Try to get the next puuid from the database.
         try:
             puuid = get_next_puuid()
@@ -26,7 +28,7 @@ try:
             print("Error getting next puuid:", e)
             print("Fetching the top one of the soloq")
         finally:
-            if puuid is None:
+            if not puuid:
                 puuid = firstPUUID
                 last_fetch = fetch_date
 
@@ -58,29 +60,37 @@ try:
                 if is_match_on_db(match):
                     continue
 
+                print("Fetching data from the match: ", match)
                 # Get the DICT data from the match.
                 match_data = fetch_match_data(match)
 
                 # If the data of the match was fetched, proceed to process it and then insert into the database.
                 if match_data is not None:
+                    # Array to receive the players data whose ratings where not fetched lately.
+                    new_p_info = []
                     # Get the simple data for each table.
                     m_info = get_match_info(match_data)
                     p_info = get_player_info(match_data)
                     p_stats = get_player_stats(match_data)
                     # p_info is an array of dicts, containing each player on the game.
                     for player in p_info:
-                        # Gets the summoner id to use for retrieving more in depth informations.
+                        # Verify if the player is on the DB and if didn't had the rating fetched already.
+                        if is_player_on_db(player["puuid"]) and last_rating_today(
+                            player["puuid"]
+                        ):
+                            continue
+                        # Gets the summoner id to use for retrieving the player's rating and treat it.
                         summoner_id = player["summoner_id"]
+                        p_rating = get_player_rating(fetch_player_rating(summoner_id))
+                        player.update(p_rating)
 
-                        # Fetches the details and ranking of the player. Removes the unwanted fields and update the current info.
-                        p_detailed_info = fetch_player_details(summoner_id)
-                        p_rating = fetch_player_rating(summoner_id)
-                        filtered_player_info = get_player_details(
-                            p_detailed_info, p_rating
-                        )
-                        player.update(filtered_player_info)
+                        # Append the player's array without the duplicates and update the date of the rating fetching.
+                        new_p_info.append(player)
+                        update_rating_date(player["puuid"])
+                    print("Inserting data into the database:")
+                    # Insert the data into the database.
                     insert_match_info(m_info)
-                    insert_player_info(p_info)
+                    insert_player_info(new_p_info)
                     insert_player_stats(p_stats)
                 else:
                     continue
@@ -90,10 +100,12 @@ try:
 
         # If every match was succesfully read and inserted, then update the last_fetch from the given player.
         update_fetch_date(puuid)
+        os.system("cls" if os.name == "nt" else "clear")
+        print("Starting next loop...")
 except KeyboardInterrupt:
     print("User interrupted the program.")
 except Error as E:
-    print("A error occurred: %s", e)
+    print("A error occurred: %s", E)
 finally:
     # Close the mysql connection.
     close_mysql()
