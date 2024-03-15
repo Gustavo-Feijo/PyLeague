@@ -44,13 +44,15 @@ def get_player_info(data):
             "summoner_id": participant["summonerId"],
             "game_name": participant["riotIdGameName"],
             "tag_line": participant["riotIdTagline"],
+            "profile_icon_id": participant["profileIcon"],
+            "summoner_level": participant["summonerLevel"],
         }
         player_array.append(player_info)
     return player_array
 
 
 # Function to return more detailed information about the player, including rating, account id, summoner_level, etc.
-def get_player_details(p_info, p_rating):
+def get_player_rating(p_rating):
     """
     Returns the missing information about the player.
 
@@ -61,17 +63,15 @@ def get_player_details(p_info, p_rating):
     Returns:
         dict: The filtered dictionary with the relevant information about the player.
     """
-    player_detail = {
-        "account_id": p_info["accountId"],
-        "profile_icon_id": p_info["profileIconId"],
-        "summoner_level": p_info["summonerLevel"],
+    player_rating = {
         "tier": p_rating["tier"],
         "division": p_rating["rank"],
         "league_points": p_rating["leaguePoints"],
         "wins": p_rating["wins"],
         "losses": p_rating["losses"],
+        "last_rating": datetime.datetime.now().strftime("%Y-%m-%d"),
     }
-    return player_detail
+    return player_rating
 
 
 # Get informations from each player of a game and return it as a array.
