@@ -313,7 +313,7 @@ def get_all_stats():
     global connection
     sql = """SELECT * FROM tb_player_stats"""
     try:
-        df = pd.read_sql(sql, connection, index_col=["id"])
+        df = pd.read_sql(sql, con=engine, index_col=["id"])
         return df
     except Exception as e:
         raise e
@@ -327,7 +327,7 @@ def get_all_players():
     global connection
     sql = """SELECT * FROM tb_player_info"""
     try:
-        df = pd.read_sql(sql, connection, index_col=["id"])
+        df = pd.read_sql(sql, con=engine, index_col=["id"])
         return df
     except Exception as e:
         raise e
@@ -341,7 +341,7 @@ def get_all_matches():
     global connection
     sql = """SELECT * FROM tb_match_info"""
     try:
-        df = pd.read_sql(sql, connection, index_col=["id"])
+        df = pd.read_sql(sql, con=engine, index_col=["id"])
         return df
     except Exception as e:
         raise e
