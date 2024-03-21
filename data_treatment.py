@@ -54,14 +54,13 @@ def get_player_info(data):
 # Function to return more detailed information about the player, including rating, account id, summoner_level, etc.
 def get_player_rating(p_rating):
     """
-    Returns the missing information about the player.
+    Returns the treated player's rating.
 
     Args:
-        p_info (dict): Information about the player account, including account id, summoner_level, etc.
         p_rating (dict): Information about the player perfomance in the 5v5 Solo Duo.
 
     Returns:
-        dict: The filtered dictionary with the relevant information about the player.
+        dict: The filtered dictionary with the player's rating filtered.
     """
     player_rating = {
         "tier": p_rating["tier"],

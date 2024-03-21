@@ -6,11 +6,12 @@ import sqlalchemy
 from datetime import datetime
 from dotenv import load_dotenv
 from mysql.connector import Error
+from mysql.connector import pooling
 
 # Load the dotenv configuration for the database connection.
 load_dotenv("credentials.env")
 # Creates a empty connection.
-connection = None
+pool = None
 
 # Connection string for the sqlalchemy.
 connection_string = f"mysql+mysqlconnector://{os.getenv('DB_USERNAME')}:{os.getenv('DB_PASSWORD')}@{os.getenv('DB_HOST')}/{os.getenv('DB_DATABASE')}"
@@ -35,9 +36,11 @@ def connect_mysql():
     """
     Connect to the mysql database with the credentials from the enviroment.
     """
-    global connection
+    global pool
     try:
-        connection = mysql.connector.connect(
+        pool = pooling.MySQLConnectionPool(
+            pool_name="pool",
+            pool_size=5,
             host=os.getenv("DB_HOST"),
             user=os.getenv("DB_USERNAME"),
             password=os.getenv("DB_PASSWORD"),
@@ -52,9 +55,9 @@ def close_mysql():
     """
     References the global connection, verify that it exists and is connected, if it is, close the connection.
     """
-    global connection
-    if connection and connection.is_connected():
-        connection.close()
+    global pool
+    if pool and not pool.is_closed():
+        pool.close()
 
 
 # Execute a query on the database.
@@ -72,24 +75,26 @@ def execute_query(query, params=None):
     Returns:
         List[tuples]: Returns a list of tuples containing the results.
     """
-    global connection
+    global pool
     try:
+        # Get a connection from the pool
+        connection = pool.get_connection()
 
-        # Creates a cursor and executes the query.
-        if connection is not None:
-            cursor = connection.cursor()
-        else:
-            raise Exception("Could not create cursor, the database is not connected.")
+        # Create a cursor
+        cursor = connection.cursor()
+        # Execute the query
         if params:
             cursor.execute(query, params)
         else:
             cursor.execute(query)
 
+        # Fetch the data
         data = cursor.fetchall()
-
-        cursor.close()
-
         connection.commit()
+        # Close cursor and release connection back to the pool
+        cursor.close()
+        connection.close()
+
         return data
     except Exception as e:
         raise e
@@ -310,7 +315,6 @@ def get_all_stats():
     """
     Select all the data from the player_stats table.
     """
-    global connection
     sql = """SELECT * FROM tb_player_stats"""
     try:
         df = pd.read_sql(sql, con=engine, index_col=["id"])
@@ -324,7 +328,6 @@ def get_all_players():
     """
     Select all the data from the player_info table.
     """
-    global connection
     sql = """SELECT * FROM tb_player_info"""
     try:
         df = pd.read_sql(sql, con=engine, index_col=["id"])
@@ -338,7 +341,6 @@ def get_all_matches():
     """
     Select all the data from the match_info table.
     """
-    global connection
     sql = """SELECT * FROM tb_match_info"""
     try:
         df = pd.read_sql(sql, con=engine, index_col=["id"])

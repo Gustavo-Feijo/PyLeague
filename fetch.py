@@ -8,6 +8,8 @@ load_dotenv("credentials.env")
 api_key = os.getenv("API_KEY")
 session = requests.Session()
 
+retry_after = 0
+
 
 # Generic function to fetch the data from a given URL.
 def fetch(url):
@@ -24,6 +26,10 @@ def fetch(url):
         NONE: Returns none if any other error is returned.
     """
     while True:
+        global retry_after
+        if retry_after > 0:
+            time.sleep(retry_after + 1)
+            retry_after = 0
         try:
             # Does a GET request with the given URL and api key on the header.
             response = session.get(url, headers={"X-Riot-Token": f"{api_key}"})
@@ -37,7 +43,6 @@ def fetch(url):
                 print(
                     f"Rate limit exceeded. Waiting for {retry_after} seconds before retrying..."
                 )
-                time.sleep(retry_after + 1)
             # If any other error occurs, raise an exception.
             else:
                 raise Exception(f"Response failed with code: {response.status_code}")
@@ -137,3 +142,7 @@ def fetch_top_challenger():
     top_one = data["entries"][max_lp]["summonerId"]
     player_data = fetch_player_details(top_one)
     return player_data["puuid"]
+
+
+def get_retry_after():
+    return retry_after
