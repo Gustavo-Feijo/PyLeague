@@ -33,4 +33,5 @@ Multiple adjustments could be done to the code to improve it, some as follows:
 - Improve the amount and quality of the fetched data, by adding more API endpoints to be fetched, such as Summoner V4, to get the summoner level, profile icon (For front-end uses), account id, etc. (Implemented)
 - Improve treatment of errors.
 - Start the fetching without the need to manually add the first player info. Could be done by fetching a random player of a League by using the LEAGUE-V4 API, preferably from the Challenger League. (Implemented. PS: Problems could happen if the player didn't played since the start date for the database.)
-- Implement paralelism to improve performance, adding multithreading and fetching from different regions to avoid rate limiting.
+- Implement paralelism to improve performance, adding multithreading and fetching from different regions to avoid rate limiting. (Implemented multi-threading and mysql pooling)
+- Implement asyncio and aiohttp to hugelly improve performance.
